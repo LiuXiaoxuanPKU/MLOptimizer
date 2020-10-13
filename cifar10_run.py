@@ -11,10 +11,12 @@ import torchvision.transforms as transforms
 import os
 import argparse
 
-from model import lenet_3
+from model import mobilenet, lenet_3
 from utils import progress_bar
 
 from optimizer import Optimizer
+import inspect
+from gpu_mem_track import  MemTracker
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
@@ -26,6 +28,9 @@ args = parser.parse_args()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
+
+frame = inspect.currentframe()          # define a frame to track
+gpu_tracker = MemTracker(frame)         # define a GPU tracker
 
 # Data
 print('==> Preparing data..')
@@ -88,11 +93,15 @@ def train(epoch):
     correct = 0
     total = 0
     for batch_idx, (inputs, targets) in enumerate(trainloader):
+        gpu_tracker.track()
         memory_opt.reset()
 
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
+
+        gpu_tracker.track()
+
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
@@ -101,6 +110,8 @@ def train(epoch):
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
+
+        gpu_tracker.track()
 
         print(memory_opt.calculate())
 
