@@ -11,8 +11,8 @@ import torchvision.transforms as transforms
 import os
 import argparse
 
-from model import lenet_3
-from utils import progress_bar
+from model import mobilenet, lenet_3
+#from utils import progress_bar
 
 from optimizer import Optimizer
 
@@ -57,7 +57,7 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer',
 # Model
 print('==> Building model..')
 net = lenet_3.LeNet()
-# net = mobilenet.MobileNet()
+#net = mobilenet.MobileNet()
 memory_opt = Optimizer()
 memory_opt.register(net)
 
@@ -65,6 +65,7 @@ net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
+print('===> Run Device', device)
 
 if args.resume:
     # Load checkpoint.
@@ -104,7 +105,7 @@ def train(epoch):
 
         print(memory_opt.calculate())
 
-        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+        print(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
 
@@ -126,7 +127,7 @@ def test(epoch):
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
-            progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+            print(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                          % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
     # Save checkpoint.
