@@ -40,8 +40,10 @@ class Optimizer:
         # print("hook")
         org_mem = self.org_mem(fea_out)
         sparse_mem = self.sparse_compress(fea_out, get_min=False)
+        #sparse_mem = 0
         sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
         rle_mem = self.rle_compress(fea_out)
+        #rle_mem = 0
 
         self.mem += org_mem
         self.sparse_mem += sparse_mem
