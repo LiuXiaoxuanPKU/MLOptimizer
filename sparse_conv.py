@@ -43,8 +43,7 @@ class Net(nn.Module):
             "dbatch" : nn.BatchNorm2d(1),
             "srelu" : nn.ReLU(),
             "drelu" : nn.ReLU(),
-            "ts1"    : None,
-            "ts2"    : None
+            "ts"    : spconv.SparseConvTensor.from_dense(),
         }
 
         self.layer_names = layer_names
@@ -54,7 +53,7 @@ class Net(nn.Module):
     def generate_layers(self, names):
         layers = []
         for n in names:
-            layers += self.layer_map[n]
+            layers += [self.layer_map[n]]
         return layers
 
 
@@ -65,7 +64,7 @@ class Net(nn.Module):
         return (news, cnt)
 
     def forward(self, x: torch.Tensor):
-
+        x = x.reshape(-1, 28, 28, 1)
         x = self.layers(x)
         x = torch.flatten(x, 1)
         x = self.dropout1(x)
@@ -172,8 +171,8 @@ def main():
                        ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
-    layer_names = ["dbatch", "dconv1", "drelu", "dconv2", "drelu", "dmaxpool"]
-
+    # layer_names = ["dbatch", "dconv1", "drelu", "dconv2", "drelu", "dmaxpool"]
+    layer_names = ["ts", "sbatch", "sconv1", "srelu", "sconv2", "smaxpool"]
     model = Net(layer_names).to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
