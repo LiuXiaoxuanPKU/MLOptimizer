@@ -31,30 +31,41 @@ class Net(nn.Module):
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
 
-        self.layer_map = {
-            "td" : spconv.ToDense(),
-            "sconv1" : spconv.SparseConv2d(1, 32, 3, 1),
-            "sconv2" : spconv.SparseConv2d(32, 64, 3, 1),
-            "dconv1" : nn.Conv2d(1, 32, 3, 1),
-            "dconv2" : nn.Conv2d(32, 64, 3, 1),
-            "smaxpool" : spconv.SparseMaxPool2d(2, 2),
-            "dmaxpool" : nn.MaxPool2d((2,2)),
-            "sbatch" : nn.BatchNorm1d(1),
-            "dbatch" : nn.BatchNorm2d(1),
-            "srelu" : nn.ReLU(),
-            "drelu" : nn.ReLU(),
-            "ts"    : spconv.SparseConvTensor.from_dense(),
-        }
-
-        self.layer_names = layer_names
-        self.layers = self.generate_layers(layer_names)
+        self.td = spconv.ToDense()
+        self.sconv1 =  spconv.SparseConv2d(1, 32, 3, 1)
+        self.sconv2 = spconv.SparseConv2d(32, 64, 3, 1)
+        self.dconv1 = nn.Conv2d(1, 32, 3, 1)
+        self.dconv2 = nn.Conv2d(32, 64, 3, 1)
+        self.smaxpool = spconv.SparseMaxPool2d(2, 2)
+        self.dmaxpool = nn.MaxPool2d((2,2))
+        self.sbatch = nn.BatchNorm1d(1)
+        self.dbatch = nn.BatchNorm2d(1)
+        self.from_dense = spconv.SparseConvTensor.from_dense
+        #
+        # self.layer_map = {
+        #     "td" : spconv.ToDense(),
+        #     "sconv1" : spconv.SparseConv2d(1, 32, 3, 1),
+        #     "sconv2" : spconv.SparseConv2d(32, 64, 3, 1),
+        #     "dconv1" : nn.Conv2d(1, 32, 3, 1),
+        #     "dconv2" : nn.Conv2d(32, 64, 3, 1),
+        #     "smaxpool" : spconv.SparseMaxPool2d(2, 2),
+        #     "dmaxpool" : nn.MaxPool2d((2,2)),
+        #     "sbatch" : nn.BatchNorm1d(1),
+        #     "dbatch" : nn.BatchNorm2d(1),
+        #     "srelu" : nn.ReLU(),
+        #     "drelu" : nn.ReLU(),
+        #     "ts"    : spconv.SparseConvTensor.from_dense(),
+        # }
+        #
+        # self.layer_names = layer_names
+        # self.layers = self.generate_layers(layer_names)
 
 
     def generate_layers(self, names):
         layers = []
         for n in names:
             layers += [self.layer_map[n]]
-        return layers
+        return nn.Sequential(*layers)
 
 
     def get_new_spar(self, news, old_spar_cnt):
@@ -65,7 +76,14 @@ class Net(nn.Module):
 
     def forward(self, x: torch.Tensor):
         x = x.reshape(-1, 28, 28, 1)
-        x = self.layers(x)
+        x = self.from_dense(x)
+        x = self.sbatch(x)
+        x = self.sconv1(x)
+        x.features = nn.ReLU(x.features)
+        x = self.sconv2(x)
+        x.features = nn.ReLU(x.features)
+        x = self.smaxpool(x)
+        
         x = torch.flatten(x, 1)
         x = self.dropout1(x)
         x = self.fc1(x)
