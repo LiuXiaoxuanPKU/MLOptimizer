@@ -25,7 +25,7 @@ sparsity_maxpool = (0, 0)
 
 class Net(nn.Module):
     def __init__(self, layer_names):
-
+        super(Net, self).__init__()
         self.fc1 = nn.Linear(9216, 128)
         self.fc2 = nn.Linear(128, 10)
         self.dropout1 = nn.Dropout2d(0.25)
@@ -43,7 +43,8 @@ class Net(nn.Module):
             "dbatch" : nn.BatchNorm2d(1),
             "srelu" : nn.ReLU(),
             "drelu" : nn.ReLU(),
-            "ts"    : None
+            "ts1"    : None,
+            "ts2"    : None
         }
 
         self.layer_names = layer_names
@@ -64,20 +65,8 @@ class Net(nn.Module):
         return (news, cnt)
 
     def forward(self, x: torch.Tensor):
-        global sparsity_cov1
-        global sparsity_cov2
-        global sparsity_relu1
-        global sparsity_relu2
-        global sparsity_maxpool
 
-        for i, fn in enumerate(self.layer_names):
-            if fn in ["srelu", "sbatch"]:
-                x.features = self.layers[i](x.features)
-            if fn == "ts":
-                x = spconv.from_dense()
-            else:
-                x = self.layers[i](x)
-
+        x = self.layers(x)
         x = torch.flatten(x, 1)
         x = self.dropout1(x)
         x = self.fc1(x)
@@ -92,7 +81,7 @@ class Net(nn.Module):
 def train(args, model, device, train_loader, optimizer, epoch):
     global forward_time
     global bw_time
-    model.train()
+
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
