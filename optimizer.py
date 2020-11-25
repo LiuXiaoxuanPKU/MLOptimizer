@@ -6,7 +6,7 @@ import zstandard as zstd
 import sys
 import snappy
 
-debug = True
+debug = False
 
 
 class Optimizer:
@@ -22,8 +22,13 @@ class Optimizer:
         self.min_sparse_mem = 0
         self.rle_mem = 0
         self.min_rle_mem = 0
-        self.zstd_mem = 0
-        self.cctx = zstd.ZstdCompressor(level=1, write_checksum=True, threads=0)
+        self.zstd_mem1 = 0
+        self.zstd_mem2 = 0
+        self.zstd_mem3 = 0
+        self.cctx1 = zstd.ZstdCompressor(level=1, write_checksum=True, threads=0)
+        self.cctx2 = zstd.ZstdCompressor(level=10, write_checksum=True, threads=0)
+        self.cctx3 = zstd.ZstdCompressor(level=20, write_checksum=True, threads=0)
+
         self.dctx = zstd.ZstdDecompressor()
 
     def reset(self):
@@ -32,7 +37,9 @@ class Optimizer:
         self.min_sparse_mem = 0
         self.rle_mem = 0
         self.min_rle_mem = 0
-        self.zstd_mem = 0
+        self.zstd_mem1 = 0
+        self.zstd_mem2 = 0
+        self.zstd_mem3 = 0
         self.snappy_mem = 0
 
     def calculate(self):
@@ -42,7 +49,9 @@ class Optimizer:
             "min_sparse_mem" : self.min_sparse_mem,
             "rle_mem" : self.rle_mem,
             "min_rle_mem" : self.min_rle_mem,
-            "zstd" : self.zstd_mem + self.cctx.memory_size(),
+            "zstd1" : self.zstd_mem1 + self.cctx1.memory_size(),
+            "zstd2": self.zstd_mem2 + self.cctx2.memory_size(),
+            "zstd3": self.zstd_mem3 + self.cctx3.memory_size(),
             "snappy" : self.snappy_mem
         }
 
@@ -56,7 +65,7 @@ class Optimizer:
         # rle_mem = self.rle_compress(fea_out)
         rle_mem = 0
 
-        zstd_mem = self.zstd_compress(fea_out)
+        zstd_mem1, zstd_mem2, zstd_mem3 = self.zstd_compress(fea_out)
         snappy_mem = self.snappy_compress(fea_out)
 
 
@@ -65,7 +74,9 @@ class Optimizer:
         self.min_sparse_mem += sparse_min_mem
         self.rle_mem += rle_mem
         self.min_rle_mem += min(rle_mem, org_mem)
-        self.zstd_mem += zstd_mem
+        self.zstd_mem1 += zstd_mem1
+        self.zstd_mem2 += zstd_mem2
+        self.zstd_mem3 += zstd_mem3
         self.snappy_mem += snappy_mem
 
         return None
@@ -86,11 +97,14 @@ class Optimizer:
 
     def zstd_compress(self, x):
         data = x.detach().numpy()
-        compressed_x = self.cctx.compress(data.tobytes())
+        compressed_x1 = self.cctx1.compress(data.tobytes())
+        compressed_x2 = self.cctx2.compress(data.tobytes())
+        compressed_x3 = self.cctx3.compress(data.tobytes())
+
         if debug:
-            decompress_x = np.frombuffer(self.dctx.decompress(compressed_x), dtype=data.dtype)
+            decompress_x = np.frombuffer(self.dctx.decompress(compressed_x1), dtype=data.dtype)
             assert (np.array_equal(decompress_x.reshape(data.shape), data))
-        return sys.getsizeof(compressed_x)
+        return sys.getsizeof(compressed_x1), sys.getsizeof(compressed_x2), sys.getsizeof(compressed_x3)
 
     def snappy_compress(self, x):
         data = x.detach().numpy()
