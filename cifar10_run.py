@@ -16,7 +16,7 @@ from model import mobilenet, lenet_3
 
 from optimizer import Optimizer
 import inspect
-from gpu_mem_track import  MemTracker
+import time
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
@@ -30,7 +30,7 @@ best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 frame = inspect.currentframe()          # define a frame to track
-gpu_tracker = MemTracker(frame)         # define a GPU tracker
+# gpu_tracker = MemTracker(frame)         # define a GPU tracker
 
 # Data
 print('==> Preparing data..')
@@ -94,14 +94,22 @@ def train(epoch):
     correct = 0
     total = 0
     for batch_idx, (inputs, targets) in enumerate(trainloader):
-        gpu_tracker.track()
+        start = None
+        end = None
+        if device == "cuda":
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+            start.record()
+        elif device == "cpu":
+            start = time.time()
+
         memory_opt.reset()
 
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
 
-        gpu_tracker.track()
+        # gpu_tracker.track()
 
         loss = criterion(outputs, targets)
         loss.backward()
@@ -114,7 +122,19 @@ def train(epoch):
 
 #        gpu_tracker.track()
 
-        print(memory_opt.calculate())
+        record = memory_opt.calculate()
+        if device == "cuda":
+            end.record()
+            torch.cuda.synchronize()
+            record['train_time'] = start.elapsed_time(end)
+            start.record()
+        elif device == "cpu":
+            end = time.time()
+            record['train_time'] = end - start
+
+        print(record)
+        # with open("result.txt", "a") as f:
+        #     f.write(str(memory_opt.calculate()) + "\n")
 
         print(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))

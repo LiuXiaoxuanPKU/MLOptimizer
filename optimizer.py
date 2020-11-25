@@ -2,8 +2,11 @@ import torch
 import torch.nn as nn
 from model import mobilenet
 import numpy as np
+import zstandard as zstd
+import sys
+import snappy
 
-debug = False
+debug = True
 
 
 class Optimizer:
@@ -19,6 +22,9 @@ class Optimizer:
         self.min_sparse_mem = 0
         self.rle_mem = 0
         self.min_rle_mem = 0
+        self.zstd_mem = 0
+        self.cctx = zstd.ZstdCompressor(level=1, write_checksum=True, threads=0)
+        self.dctx = zstd.ZstdDecompressor()
 
     def reset(self):
         self.mem = 0
@@ -26,6 +32,8 @@ class Optimizer:
         self.min_sparse_mem = 0
         self.rle_mem = 0
         self.min_rle_mem = 0
+        self.zstd_mem = 0
+        self.snappy_mem = 0
 
     def calculate(self):
         return {
@@ -33,23 +41,33 @@ class Optimizer:
             "sparse_mem" : self.sparse_mem,
             "min_sparse_mem" : self.min_sparse_mem,
             "rle_mem" : self.rle_mem,
-            "min_rle_mem" : self.min_rle_mem
+            "min_rle_mem" : self.min_rle_mem,
+            "zstd" : self.zstd_mem + self.cctx.memory_size(),
+            "snappy" : self.snappy_mem
         }
 
     def hook(self, module, fea_in, fea_out):
         # print("hook")
         org_mem = self.org_mem(fea_out)
         sparse_mem = self.sparse_compress(fea_out, get_min=False)
-        #sparse_mem = 0
+        # sparse_mem = 0
         sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
-        rle_mem = self.rle_compress(fea_out)
-        #rle_mem = 0
+        # sparse_min_mem = 0
+        # rle_mem = self.rle_compress(fea_out)
+        rle_mem = 0
+
+        zstd_mem = self.zstd_compress(fea_out)
+        snappy_mem = self.snappy_compress(fea_out)
+
 
         self.mem += org_mem
         self.sparse_mem += sparse_mem
         self.min_sparse_mem += sparse_min_mem
         self.rle_mem += rle_mem
         self.min_rle_mem += min(rle_mem, org_mem)
+        self.zstd_mem += zstd_mem
+        self.snappy_mem += snappy_mem
+
         return None
 
     def register(self, net):
@@ -65,6 +83,22 @@ class Optimizer:
 
     def org_mem(self, x):
         return np.prod(x.shape) * Optimizer.data_size
+
+    def zstd_compress(self, x):
+        data = x.detach().numpy()
+        compressed_x = self.cctx.compress(data.tobytes())
+        if debug:
+            decompress_x = np.frombuffer(self.dctx.decompress(compressed_x), dtype=data.dtype)
+            assert (np.array_equal(decompress_x.reshape(data.shape), data))
+        return sys.getsizeof(compressed_x)
+
+    def snappy_compress(self, x):
+        data = x.detach().numpy()
+        compressed_x = snappy.compress(data.tobytes())
+        if debug:
+            decompress_x = np.frombuffer(snappy.decompress(compressed_x), dtype=data.dtype)
+            assert (np.array_equal(decompress_x.reshape(data.shape), data))
+        return sys.getsizeof(compressed_x)
 
     def to_sparse(self, x):
         """ converts dense tensor x to sparse format """
