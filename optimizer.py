@@ -5,9 +5,10 @@ import numpy as np
 import zstandard as zstd
 import sys
 import snappy
+import time
 
 debug = False
-
+force_sparsify = False
 
 class Optimizer:
     data_size = 4
@@ -25,11 +26,16 @@ class Optimizer:
         self.zstd_mem1 = 0
         self.zstd_mem2 = 0
         self.zstd_mem3 = 0
-        self.cctx1 = zstd.ZstdCompressor(level=1, write_checksum=True, threads=0)
-        self.cctx2 = zstd.ZstdCompressor(level=10, write_checksum=True, threads=0)
-        self.cctx3 = zstd.ZstdCompressor(level=20, write_checksum=True, threads=0)
+        self.cpr_time = 0
+        self.snappy_mem = 0
 
+        self.cctx1 = zstd.ZstdCompressor(level=1, write_checksum=True, threads=0)
+        self.cctx2 = zstd.ZstdCompressor(level=3, write_checksum=True, threads=0)
+        self.cctx3 = zstd.ZstdCompressor(level=5, write_checksum=True, threads=0)
         self.dctx = zstd.ZstdDecompressor()
+
+        # self.dropout = nn.Dropout(p=0.9)
+
 
     def reset(self):
         self.mem = 0
@@ -41,8 +47,10 @@ class Optimizer:
         self.zstd_mem2 = 0
         self.zstd_mem3 = 0
         self.snappy_mem = 0
+        self.cpr_time = 0
 
     def calculate(self):
+        # print ( self.cctx1.memory_size(),  self.cctx2.memory_size(), self.cctx3.memory_size())
         return {
             "org_mem" : self.mem ,
             "sparse_mem" : self.sparse_mem,
@@ -52,21 +60,29 @@ class Optimizer:
             "zstd1" : self.zstd_mem1 + self.cctx1.memory_size(),
             "zstd2": self.zstd_mem2 + self.cctx2.memory_size(),
             "zstd3": self.zstd_mem3 + self.cctx3.memory_size(),
-            "snappy" : self.snappy_mem
+            "snappy" : self.snappy_mem,
+            "cpr_time" : self.cpr_time
         }
 
     def hook(self, module, fea_in, fea_out):
-        # print("hook")
+        start = time.time()
+        if force_sparsify:
+            fea_out = self.dropout(fea_out)
+
         org_mem = self.org_mem(fea_out)
-        sparse_mem = self.sparse_compress(fea_out, get_min=False)
-        # sparse_mem = 0
-        sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
-        # sparse_min_mem = 0
+        # sparse_mem = self.sparse_compress(fea_out, get_min=False)
+        sparse_mem = 0
+        # sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
+        sparse_min_mem = 0
         # rle_mem = self.rle_compress(fea_out)
         rle_mem = 0
 
         zstd_mem1, zstd_mem2, zstd_mem3 = self.zstd_compress(fea_out)
-        snappy_mem = self.snappy_compress(fea_out)
+        # snappy_mem = self.snappy_compress(fea_out)
+        # zstd_mem1, zstd_mem2, zstd_mem3 = 0, 0, 0
+        snappy_mem = 0
+        end = time.time()
+
 
 
         self.mem += org_mem
@@ -78,6 +94,7 @@ class Optimizer:
         self.zstd_mem2 += zstd_mem2
         self.zstd_mem3 += zstd_mem3
         self.snappy_mem += snappy_mem
+        self.cpr_time += end - start
 
         return None
 
@@ -98,8 +115,10 @@ class Optimizer:
     def zstd_compress(self, x):
         data = x.detach().numpy()
         compressed_x1 = self.cctx1.compress(data.tobytes())
-        compressed_x2 = self.cctx2.compress(data.tobytes())
-        compressed_x3 = self.cctx3.compress(data.tobytes())
+        # compressed_x2 = self.cctx2.compress(data.tobytes())
+        # compressed_x3 = self.cctx3.compress(data.tobytes())
+        compressed_x2 = 0
+        compressed_x3 = 0
 
         if debug:
             decompress_x = np.frombuffer(self.dctx.decompress(compressed_x1), dtype=data.dtype)
