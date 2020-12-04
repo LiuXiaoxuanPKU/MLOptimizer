@@ -70,19 +70,17 @@ class Optimizer:
             fea_out = self.dropout(fea_out)
 
 
-        fea_out = (fea_out > 0)
-
         org_mem = self.org_mem(fea_out)
         # sparse_mem = self.sparse_compress(fea_out, get_min=False)
         sparse_mem = 0
-        sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
-        # sparse_min_mem = 0
+        # sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
+        sparse_min_mem = 0
         # rle_mem = self.rle_compress(fea_out)
         rle_mem = 0
 
-        #zstd_mem1, zstd_mem2, zstd_mem3 = self.zstd_compress(fea_out)
-        #snappy_mem = self.snappy_compress(fea_out)
-        zstd_mem1, zstd_mem2, zstd_mem3 = 0, 0, 0
+        zstd_mem1, zstd_mem2, zstd_mem3 = self.zstd_compress(fea_out)
+        #snappy_mem = s#elf.snappy_compress(fea_out)
+        #zstd_mem1, zstd_mem2, zstd_mem3 = 0, 0, 0
         snappy_mem = 0
         end = time.time()
 
