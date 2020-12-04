@@ -61,7 +61,7 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer',
 
 # Model
 print('==> Building model..')
-#net = lenet_3.LeNet()
+# net = lenet_3.LeNet()
 net = mobilenet.MobileNet()
 memory_opt = Optimizer()
 memory_opt.register(net)
@@ -93,9 +93,10 @@ def train(epoch):
     train_loss = 0
     correct = 0
     total = 0
+    start = None
+    end = None
+
     for batch_idx, (inputs, targets) in enumerate(trainloader):
-        start = None
-        end = None
         if device == "cuda":
             start = torch.cuda.Event(enable_timing=True)
             end = torch.cuda.Event(enable_timing=True)
@@ -123,21 +124,31 @@ def train(epoch):
 #        gpu_tracker.track()
 
         record = memory_opt.calculate()
+        # print(record)
+
+        train_time = 0
         if device == "cuda":
             end.record()
             torch.cuda.synchronize()
-            record['train_time'] = start.elapsed_time(end)
+            train_time = start.elapsed_time(end)
             start.record()
         elif device == "cpu":
             end = time.time()
-            record['train_time'] = end - start
+            train_time = end - start
 
+<<<<<<< HEAD
         print(record)
         with open("result.txt", "a") as f:
             f.write(str(memory_opt.calculate()) + "\n")
+=======
+        record['train_time'] = train_time
+        with open("result.txt", "a") as f:
+            f.write(str(record) + "\n")
+>>>>>>> 5689b10e0cb3f589a2493ef27d74f0d1edaf5f41
 
         print(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+
 
 
 
@@ -176,6 +187,6 @@ def test(epoch):
         best_acc = acc
 
 
-for epoch in range(start_epoch, start_epoch+200):
+for epoch in range(start_epoch, start_epoch+30):
     train(epoch)
     test(epoch)
