@@ -87,7 +87,6 @@ class Optimizer:
         end = time.time()
 
 
-
         self.mem += org_mem
         self.sparse_mem += sparse_mem
         self.min_sparse_mem += sparse_min_mem
@@ -129,7 +128,7 @@ class Optimizer:
         return sys.getsizeof(compressed_x1), sys.getsizeof(compressed_x2), sys.getsizeof(compressed_x3)
 
     def snappy_compress(self, x):
-        data = x.detach().numpy()
+        data = x.cpu().detach().numpy()
         compressed_x = snappy.compress(data.tobytes())
         if debug:
             decompress_x = np.frombuffer(snappy.decompress(compressed_x), dtype=data.dtype)

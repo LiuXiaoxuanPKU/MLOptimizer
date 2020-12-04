@@ -136,9 +136,15 @@ def train(epoch):
             end = time.time()
             train_time = end - start
 
+<<<<<<< HEAD
+        print(record)
+        with open("result.txt", "a") as f:
+            f.write(str(memory_opt.calculate()) + "\n")
+=======
         record['train_time'] = train_time
         with open("result.txt", "a") as f:
             f.write(str(record) + "\n")
+>>>>>>> 5689b10e0cb3f589a2493ef27d74f0d1edaf5f41
 
         print(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
