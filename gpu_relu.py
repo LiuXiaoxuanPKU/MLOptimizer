@@ -4,6 +4,9 @@ import math
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Model on " + device)
 
+
+print("Initial Memory:", torch.cuda.memory_allocated())
+
 # Create Tensors to hold input and outputs.
 x = torch.linspace(-math.pi, math.pi, 2000).to(device=device)
 y = torch.sin(x).to(device=device)
@@ -11,8 +14,7 @@ p = torch.tensor([1, 2, 3]).to(device=device)
 # tensor (x, x^2, x^3).
 xx = x.unsqueeze(-1).pow(p)
 
-print(xx.shape)
-print(y.shape)
+print("Memory after defining input/out:", torch.cuda.memory_allocated())
 
 # define model
 model = torch.nn.Sequential(
@@ -22,13 +24,14 @@ model = torch.nn.Sequential(
 )
 
 model = model.to(device)
+print("Memory after defining model:", torch.cuda.memory_allocated())
 
 loss_fn = torch.nn.MSELoss(reduction='sum')
 learning_rate = 1e-3
 optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
 
-ini_mem = torch.cuda.memory_allocated()
-max_mem = 0
+print("Memory after defining optimizer:", torch.cuda.memory_allocated())
+
 for t in range(2000):
     torch.cuda.reset_max_memory_allocated()
     y_pred = model(xx)
@@ -37,12 +40,15 @@ for t in range(2000):
 
     if t % 100 == 99:
         print(torch.cuda.memory_summary())
-        print(t, loss.item(), max_mem)
+        print(t, loss.item())
+        print("Memory after forward:", torch.cuda.memory_allocated())
+        print("Memory after backward:", torch.cuda.memory_allocated())
 
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    max_mem = torch.cuda.max_memory_allocated() - ini_mem
+    max_mem = torch.cuda.memory_allocated()
+
 linear_layer = model[0]
 print(f'Result: y = {linear_layer.bias.item()} + {linear_layer.weight[:, 0].item()} x +'
       f' {linear_layer.weight[:, 1].item()} x^2 + {linear_layer.weight[:, 2].item()} x^3')
