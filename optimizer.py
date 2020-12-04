@@ -29,7 +29,7 @@ class Optimizer:
         self.cpr_time = 0
         self.snappy_mem = 0
 
-        self.cctx1 = zstd.ZstdCompressor(level=1, write_checksum=True, threads=0)
+        self.cctx1 = zstd.ZstdCompressor(level=1, write_checksum=True, threads=-1)
         self.cctx2 = zstd.ZstdCompressor(level=3, write_checksum=True, threads=0)
         self.cctx3 = zstd.ZstdCompressor(level=5, write_checksum=True, threads=0)
         self.dctx = zstd.ZstdDecompressor()
@@ -50,7 +50,7 @@ class Optimizer:
         self.cpr_time = 0
 
     def calculate(self):
-        # print ( self.cctx1.memory_size(),  self.cctx2.memory_size(), self.cctx3.memory_size())
+        print ( self.cctx1.memory_size(),  self.cctx2.memory_size(), self.cctx3.memory_size())
         return {
             "org_mem" : self.mem ,
             "sparse_mem" : self.sparse_mem,
@@ -69,17 +69,20 @@ class Optimizer:
         if force_sparsify:
             fea_out = self.dropout(fea_out)
 
+
+        fea_out = (fea_out > 0)
+
         org_mem = self.org_mem(fea_out)
         # sparse_mem = self.sparse_compress(fea_out, get_min=False)
         sparse_mem = 0
-        # sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
-        sparse_min_mem = 0
+        sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
+        # sparse_min_mem = 0
         # rle_mem = self.rle_compress(fea_out)
         rle_mem = 0
 
-        zstd_mem1, zstd_mem2, zstd_mem3 = self.zstd_compress(fea_out)
-        # snappy_mem = self.snappy_compress(fea_out)
-        # zstd_mem1, zstd_mem2, zstd_mem3 = 0, 0, 0
+        #zstd_mem1, zstd_mem2, zstd_mem3 = self.zstd_compress(fea_out)
+        #snappy_mem = self.snappy_compress(fea_out)
+        zstd_mem1, zstd_mem2, zstd_mem3 = 0, 0, 0
         snappy_mem = 0
         end = time.time()
 

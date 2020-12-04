@@ -8,7 +8,8 @@ p = torch.tensor([1, 2, 3])
 # tensor (x, x^2, x^3).
 xx = x.unsqueeze(-1).pow(p)
 
-
+print(xx.shape)
+print(y.shape)
 
 # define model
 model = torch.nn.Sequential(
