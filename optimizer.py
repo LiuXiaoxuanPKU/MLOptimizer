@@ -23,7 +23,7 @@ class Optimizer:
         self.rle_mem = 0
         self.min_rle_mem = 0
         self.zstd_mem = 0
-        self.cctx = zstd.ZstdCompressor(level=1, write_checksum=True, threads=0)
+        self.cctx = zstd.ZstdCompressor(level=1, write_checksum=True, threads=-1)
         self.dctx = zstd.ZstdDecompressor()
 
     def reset(self):
@@ -49,16 +49,17 @@ class Optimizer:
     def hook(self, module, fea_in, fea_out):
         # print("hook")
         org_mem = self.org_mem(fea_out)
-        sparse_mem = self.sparse_compress(fea_out, get_min=False)
-        # sparse_mem = 0
-        sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
-        # sparse_min_mem = 0
+        # sparse_mem = self.sparse_compress(fea_out, get_min=False)
+        sparse_mem = 0
+        # sparse_min_mem = self.sparse_compress(fea_out, get_min=True)
+        sparse_min_mem = 0
         # rle_mem = self.rle_compress(fea_out)
         rle_mem = 0
 
         zstd_mem = self.zstd_compress(fea_out)
-        snappy_mem = self.snappy_compress(fea_out)
-
+        #snappy_mem = self.snappy_compress(fea_out)
+        #zstd_mem = 0
+        snappy_mem = 0
 
         self.mem += org_mem
         self.sparse_mem += sparse_mem
@@ -85,7 +86,7 @@ class Optimizer:
         return np.prod(x.shape) * Optimizer.data_size
 
     def zstd_compress(self, x):
-        data = x.detach().numpy()
+        data = x.cpu().detach().numpy()
         compressed_x = self.cctx.compress(data.tobytes())
         if debug:
             decompress_x = np.frombuffer(self.dctx.decompress(compressed_x), dtype=data.dtype)
@@ -93,7 +94,7 @@ class Optimizer:
         return sys.getsizeof(compressed_x)
 
     def snappy_compress(self, x):
-        data = x.detach().numpy()
+        data = x.cpu().detach().numpy()
         compressed_x = snappy.compress(data.tobytes())
         if debug:
             decompress_x = np.frombuffer(snappy.decompress(compressed_x), dtype=data.dtype)

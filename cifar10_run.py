@@ -61,8 +61,8 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer',
 
 # Model
 print('==> Building model..')
-net = lenet_3.LeNet()
-#net = mobilenet.MobileNet()
+#net = lenet_3.LeNet()
+net = mobilenet.MobileNet()
 memory_opt = Optimizer()
 memory_opt.register(net)
 
@@ -133,8 +133,8 @@ def train(epoch):
             record['train_time'] = end - start
 
         print(record)
-        # with open("result.txt", "a") as f:
-        #     f.write(str(memory_opt.calculate()) + "\n")
+        with open("result.txt", "a") as f:
+            f.write(str(memory_opt.calculate()) + "\n")
 
         print(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
