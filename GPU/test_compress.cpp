@@ -33,13 +33,13 @@ int main() {
     size_t compress_output_size = compressor.get_max_output_size(
         compress_temp_space, compress_temp_size);
     void * compress_output_space;
-    cudaMalloc(&compress_output_space, output_size);
+    cudaMalloc(&compress_output_space, compress_output_size);
 
     nvcompError_t status;
     compressor.compress_async(compress_temp_space,
         compress_temp_size, compress_output_space, &compress_output_size, stream);
 
-    cudaStreamSynchronize(stream)
+    cudaStreamSynchronize(stream);
     cudaFree(compress_temp_space);
     cudaFree(d_uncompressed_data);
 
@@ -50,7 +50,7 @@ int main() {
     void * decompress_temp_space;
     cudaMalloc(&decompress_temp_space, decompress_temp_size);
     const size_t decompress_output_count = decompressor.get_num_elements();
-    int * decompress_output_space;
+    float * decompress_output_space;
     cudaMalloc((void**)&decompress_output_space, decompress_output_count*sizeof(float));
     decompressor.decompress_async(decompress_temp_space, decompress_temp_size,
                                     decompress_output_space, decompress_output_count,
