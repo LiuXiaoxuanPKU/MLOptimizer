@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 import os
 import argparse
 
-from model import mobilenet, lenet_3, resnet
+from model import mobilenet, lenet_3, resnet, vgg
 #from utils import progress_bar
 
 from optimizer import Optimizer
@@ -62,8 +62,9 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer',
 # Model
 print('==> Building model..')
 # net = lenet_3.LeNet()
-net = mobilenet.MobileNet()
-net = resnet.ResNet50()
+# net = mobilenet.MobileNet()
+# net = resnet.ResNet50()
+net = vgg.vgg16()
 memory_opt = Optimizer()
 memory_opt.register(net)
 
