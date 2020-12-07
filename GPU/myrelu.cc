@@ -4,7 +4,14 @@
 std::pair<torch::Tensor, torch::Tensor> myrelu_forward_cuda(torch::Tensor data);
 torch::Tensor myrelu_backward_cuda(torch::Tensor mask, torch::Tensor data);
 
-class MyReLU : public Function<ActQuantizedReLU> {
+
+// Helper for type check
+#define CHECK_CUDA_TENSOR_TYPE(name, type)                                        \
+  TORCH_CHECK(name.device().is_cuda(), #name " must be a CUDA tensor!");          \
+  TORCH_CHECK(name.is_contiguous(), #name " must be contiguous!");                \
+  TORCH_CHECK(name.dtype() == type, "The type of " #name " is not correct!");     \
+
+class MyReLU : public Function<MyReLU> {
  public:
   static torch::Tensor forward(AutogradContext *ctx, torch::Tensor input) {
     torch::Tensor mask, output;

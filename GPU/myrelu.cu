@@ -9,7 +9,7 @@ __global__ void myrelu_forward_kernel(const float* __restrict__ data,
                                       float* __restrict__ output,
                                       int N) {
 
-    int id = blockId.x * blockDim.x + threadIdx.x;
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (id < N) {
         int bit  = data[id] > 0;
@@ -19,9 +19,8 @@ __global__ void myrelu_forward_kernel(const float* __restrict__ data,
 }
 
 
-std::vector<at::Tensor> myrelu_forward_cu(
-       torch::Tensor data,
-    ) {
+std::pair<torch::Tensor, torch::Tensor> myrelu_forward_cuda(
+       torch::Tensor data) {
     int n_elements = 1;
     for (size_t i = 0; i < data.dim(); ++i) {
         n_elements *= data.size(i);
@@ -54,7 +53,7 @@ __global__ void myrelu_backward_kernel(const float* __restrict__ data,
   }
 }
 
-std::vector<at::Tensor> myrelu_backward_cu(torch::Tensor mask, torch::Tensor data){
+std::vector<at::Tensor> myrelu_backward_cuda(torch::Tensor mask, torch::Tensor data){
   int n_elements = 1;
   for (size_t i = 0; i < data.dim(); ++i) {
     n_elements *= data.size(i);
