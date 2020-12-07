@@ -1,6 +1,8 @@
 #include <torch/extension.h>
 #include <torch/torch.h>
 
+using namespace torch::autograd;
+
 std::pair<torch::Tensor, torch::Tensor> myrelu_forward_cuda(torch::Tensor data);
 torch::Tensor myrelu_backward_cuda(torch::Tensor mask, torch::Tensor data);
 
