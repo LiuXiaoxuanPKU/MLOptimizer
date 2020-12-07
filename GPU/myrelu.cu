@@ -53,7 +53,7 @@ __global__ void myrelu_backward_kernel(const float* __restrict__ data,
   }
 }
 
-std::vector<torch::Tensor> myrelu_backward_cuda(torch::Tensor mask, torch::Tensor data){
+torch::Tensor myrelu_backward_cuda(torch::Tensor mask, torch::Tensor data){
   int n_elements = 1;
   for (size_t i = 0; i < data.dim(); ++i) {
     n_elements *= data.size(i);
