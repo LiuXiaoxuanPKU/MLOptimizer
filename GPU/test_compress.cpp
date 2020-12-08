@@ -6,9 +6,10 @@
 #include "nvcomp.hpp"
 
 int main() {
+    using T = int;
     int uncompressed_count = 100;
-    float uncompressed_data[100];
-    float decompressed_data[100];
+    T uncompressed_data[100];
+    T decompressed_data[100];
 
     cudaStream_t stream;
     cudaStreamCreate(&stream);
@@ -17,14 +18,14 @@ int main() {
         uncompressed_data[i] = i;
     }
 
-    float* d_uncompressed_data{nullptr};
-    cudaMalloc(&d_uncompressed_data, sizeof(float) * uncompressed_count);
-    cudaMemcpy(d_uncompressed_data, uncompressed_data, sizeof(uncompressed_data), cudaMemcpyHostToDevice);
+    T* d_uncompressed_data{nullptr};
+    cudaMalloc(&d_uncompressed_data, sizeof(T) * uncompressed_count);
+    cudaMemcpy(d_uncompressed_data, uncompressed_data, sizeof(T) * uncompressed_count, cudaMemcpyHostToDevice);
 
 
+    size_t chunk_size = 1 << 16;
     std::cout << "Start to Compress" << std::endl;
-    nvcomp::CascadedCompressor<float> compressor(
-        uncompressed_data, uncompressed_count, 2, 1, true);
+    LZ4Compressor<T> compressor(d_uncompressed_data, uncompressed_count, chunk_size)
 
     const size_t compress_temp_size = compressor.get_temp_size();
     void * compress_temp_space;
@@ -45,13 +46,13 @@ int main() {
 
 
     std::cout << "Start to Decompress" << std::endl;
-    nvcomp::Decompressor<float> decompressor(compress_output_space, compress_output_size, stream);
+    nvcomp::Decompressor<T> decompressor(compress_output_space, compress_output_size, stream);
     const size_t decompress_temp_size = decompressor.get_temp_size();
     void * decompress_temp_space;
     cudaMalloc(&decompress_temp_space, decompress_temp_size);
     const size_t decompress_output_count = decompressor.get_num_elements();
-    float * decompress_output_space;
-    cudaMalloc((void**)&decompress_output_space, decompress_output_count*sizeof(float));
+    T * decompress_output_space;
+    cudaMalloc((void**)&decompress_output_space, decompress_output_count*sizeof(T));
     decompressor.decompress_async(decompress_temp_space, decompress_temp_size,
                                     decompress_output_space, decompress_output_count,
                                     stream);
