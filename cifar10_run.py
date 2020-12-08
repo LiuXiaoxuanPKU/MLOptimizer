@@ -65,6 +65,10 @@ print('==> Building model..')
 # net = mobilenet.MobileNet()
 # net = resnet.ResNet50()
 net = vgg.vgg16()
+transform_train = transforms.Compose(
+    [transforms.ToTensor(),
+     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
 memory_opt = Optimizer()
 memory_opt.register(net)
 
@@ -143,6 +147,9 @@ def train(epoch):
         print(record)
         with open("result.txt", "a") as f:
             f.write(str(record) + "\n")
+
+        with open("train_loss.txt", "a") as f:
+            f.write(str(train_loss/(batch_idx+1)) + ","  + str(100.*correct/total, correct, total))
 
         print(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
