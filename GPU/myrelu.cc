@@ -13,12 +13,14 @@ torch::Tensor myrelu_backward_cuda(torch::Tensor mask, torch::Tensor data);
   TORCH_CHECK(name.is_contiguous(), #name " must be contiguous!");                \
   TORCH_CHECK(name.dtype() == type, "The type of " #name " is not correct!");     \
 
-std::pair<torch::tensor, torch::tensor> compress(torch::Tensor data) {
-    return std::make_pair<torch::tensor, torch::tensor>(data, data);
+torch::Tensor compress(torch::Tensor data) {
+    float* float_data= data.data_ptr<float>();
+    std::cout << float_data[0] << std::endl;
+    return data;
 }
 
-torch::Tensor decompress(std::pair<torch::tensor, torch::tensor> data) {
-    return data.first;
+torch::Tensor decompress(torch::Tensor data) {
+    return data;
 }
 
 class MyReLU : public Function<MyReLU> {
