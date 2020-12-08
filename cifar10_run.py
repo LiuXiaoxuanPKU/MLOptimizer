@@ -20,7 +20,7 @@ import time
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+parser.add_argument('--lr', default=0.003, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true',
                     help='resume from checkpoint')
 args = parser.parse_args()
@@ -40,6 +40,7 @@ transform_train = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
+
 
 transform_test = transforms.Compose([
     transforms.ToTensor(),
@@ -65,9 +66,6 @@ print('==> Building model..')
 # net = mobilenet.MobileNet()
 # net = resnet.ResNet50()
 net = vgg.vgg16()
-transform_train = transforms.Compose(
-    [transforms.ToTensor(),
-     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
 memory_opt = Optimizer()
 memory_opt.register(net)
@@ -110,6 +108,7 @@ def train(epoch):
         elif device == "cpu":
             start = time.time()
 
+        print(inputs.shape, "-------------")
         memory_opt.reset()
 
         inputs, targets = inputs.to(device), targets.to(device)
