@@ -149,7 +149,7 @@ def train(epoch):
             f.write(str(record) + "\n")
 
         with open("train_loss.txt", "a") as f:
-            f.write(str(train_loss/(batch_idx+1)) + ","  + str(100.*correct/total, correct, total))
+            f.write(str(train_loss/(batch_idx+1)) + ","  + str(100.*correct/total))
 
         print(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
