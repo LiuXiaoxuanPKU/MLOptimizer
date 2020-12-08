@@ -13,18 +13,27 @@ torch::Tensor myrelu_backward_cuda(torch::Tensor mask, torch::Tensor data);
   TORCH_CHECK(name.is_contiguous(), #name " must be contiguous!");                \
   TORCH_CHECK(name.dtype() == type, "The type of " #name " is not correct!");     \
 
+std::pair<torch::tensor, torch::tensor> compress(torch::Tensor data) {
+    return std::make_pair<torch::tensor, torch::tensor>(data, data);
+}
+
+torch::Tensor decompress(std::pair<torch::tensor, torch::tensor> data) {
+    return data.first;
+}
+
 class MyReLU : public Function<MyReLU> {
  public:
   static torch::Tensor forward(AutogradContext *ctx, torch::Tensor input) {
     torch::Tensor mask, output;
     std::tie(output, mask) = myrelu_forward_cuda(input);
-    ctx->save_for_backward({mask});
+
+    ctx->save_for_backward({compress(mask)});
     return output;
   }
 
   static tensor_list backward(AutogradContext *ctx, tensor_list grad_outputs) {
     auto saved = ctx->get_saved_variables();
-    return {myrelu_backward_cuda(saved[0], grad_outputs[0])};
+    return {myrelu_backward_cuda(decompress(saved[0]), grad_outputs[0])};
   }
 };
 
