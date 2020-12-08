@@ -2,11 +2,12 @@
 #include <stdlib.h>     /* abs */
 #include <iostream>
 
+#include "lz4.hpp"
 #include "cascaded.hpp"
 #include "nvcomp.hpp"
 
 int main() {
-    using T = int;
+    using T = float;
     int uncompressed_count = 100;
     T uncompressed_data[100];
     T decompressed_data[100];
@@ -25,7 +26,7 @@ int main() {
 
     size_t chunk_size = 1 << 16;
     std::cout << "Start to Compress" << std::endl;
-    LZ4Compressor<T> compressor(d_uncompressed_data, uncompressed_count, chunk_size)
+    LZ4Compressor<T> compressor(d_uncompressed_data, uncompressed_count, chunk_size);
 
     const size_t compress_temp_size = compressor.get_temp_size();
     void * compress_temp_space;
