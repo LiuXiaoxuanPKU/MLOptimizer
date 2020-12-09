@@ -18,9 +18,31 @@ from optimizer import Optimizer
 import inspect
 import time
 
+import sys, psutil, gc
+
+def memReport():
+    for obj in gc.get_objects():
+        if torch.is_tensor(obj):
+            print(type(obj), obj.size())
+
+def getGPUMem():
+    mem = 0
+    for i in range(torch.cuda.device_count()):
+        mem += torch.cuda.memory_allocated(i)
+    return mem
+
+def cpuStats():
+    print(sys.version)
+    print(psutil.cpu_percent())
+    print(psutil.virtual_memory())  # physical memory usage
+    pid = os.getpid()
+    py = psutil.Process(pid)
+    memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
+    print('memory GB:', memoryUse)
+
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=0.003, type=float, help='learning rate')
+parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true',
                     help='resume from checkpoint')
 args = parser.parse_args()
@@ -64,8 +86,8 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer',
 print('==> Building model..')
 # net = lenet_3.LeNet()
 # net = mobilenet.MobileNet()
-# net = resnet.ResNet50()
-net = vgg.vgg16()
+net = resnet.ResNet50()
+# net = vgg.vgg16()
 
 memory_opt = Optimizer()
 memory_opt.register(net)
@@ -105,10 +127,12 @@ def train(epoch):
             start = torch.cuda.Event(enable_timing=True)
             end = torch.cuda.Event(enable_timing=True)
             start.record()
+            start_mem = getGPUMem()
         elif device == "cpu":
+            cpuStats()
             start = time.time()
 
-        print(inputs.shape, "-------------")
+        print("------------------")
         memory_opt.reset()
 
         inputs, targets = inputs.to(device), targets.to(device)
@@ -137,10 +161,12 @@ def train(epoch):
             torch.cuda.synchronize()
             train_time = start.elapsed_time(end)
             start.record()
+            end_mem = getGPUMem()
+            print("Memory usage:", end_mem - start_mem)
         elif device == "cpu":
             end = time.time()
             train_time = end - start
-
+            cpuStats()
 
         record['train_time'] = train_time
         print(record)
@@ -148,7 +174,7 @@ def train(epoch):
             f.write(str(record) + "\n")
 
         with open("train_loss.txt", "a") as f:
-            f.write(str(train_loss/(batch_idx+1)) + ","  + str(100.*correct/total))
+            f.write(str(train_loss/(batch_idx+1)) + ","  + str(100.*correct/total) + "\n")
 
         print(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
